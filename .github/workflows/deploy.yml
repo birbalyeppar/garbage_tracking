@@ -1,29 +1,24 @@
-name: Deploy Garbage Tracking
+name: Deploy to Local Server
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy over SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: admin123
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: 22
+          host: "192.168.1.100"      # <-- apne server ka LAN IP daalna
+          username: "admin123"       # <-- tumhara server ka user
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/garbage_tracking
-            git reset --hard
             git pull origin main
-            source ~/garbage_tracking/garbage_venv/bin/activate
-            pip install -r requirements.txt
-            sudo systemctl restart garbage_tracking
+            pkill -f streamlit || true
+            nohup streamlit run app.py --server.port 8501 --server.address 0.0.0.0 &
