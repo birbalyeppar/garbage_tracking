@@ -16,9 +16,9 @@ jobs:
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: 127.0.0.1     
+          username: admin123  
+          key: /home/admin123/.ssh/id_rsa 
           script: |
             cd ~/garbage_tracking
 
