@@ -13,23 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to server
+      - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: 127.0.0.1     
-          username: admin123  
-          key: /home/admin123/.ssh/id_rsa 
+          host: ${{ secrets.SERVER_IP }}
+          username: admin123
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: 22
           script: |
             cd ~/garbage_tracking
-
-            # virtual env activate
+            git reset --hard
+            git pull origin main
             source ~/garbage_tracking/garbage_venv/bin/activate
-
-            # dependencies update
             pip install -r requirements.txt
-
-            # kill only garbage_tracking streamlit process
-            pkill -f "streamlit run app.py --server.port 8501" || true
-
-            # run again in background
-            nohup streamlit run app.py --server.port 8501 > ~/garbage_tracking.log 2>&1 &
+            sudo systemctl restart garbage_tracking
