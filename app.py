@@ -35,7 +35,7 @@ try:
 except Exception:
     pass
  
-st.write(f"🖥️ Inference device: **{DEVICE.upper()}**")
+st.write(f"Inference device: **{DEVICE.upper()}**")
  
 # ---------------------------
 # Load model (cached, single load for all sessions)
@@ -62,7 +62,8 @@ CLASS_NAMES = model.names if hasattr(model, "names") else {}
 # UI
 # ---------------------------
 st.title("Realtime Garbage Detection")
- 
+st.subheader("Detect and track garbage in video")
+
 video_file = st.file_uploader("Upload video", type=["mp4", "avi", "mov", "mkv"])
 video_placeholder = st.empty()
 progress = st.empty()
