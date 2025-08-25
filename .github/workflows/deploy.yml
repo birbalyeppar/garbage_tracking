@@ -17,6 +17,7 @@ jobs:
           host: "192.168.1.19"
           username: "admin123"
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 2222
           script: |
             cd ~/garbage_tracking
             git pull origin main
