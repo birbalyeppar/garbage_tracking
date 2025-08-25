@@ -26,8 +26,10 @@ jobs:
             git reset --hard
             git pull origin main
 
+            # echo "📦 Installing dependencies..."
+            # /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt
             echo "📦 Installing dependencies..."
-            /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt
+            /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu118
 
             echo "🚀 Restarting service..."
             sudo systemctl restart garbage_tracking
