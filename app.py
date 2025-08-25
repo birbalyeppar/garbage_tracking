@@ -8,7 +8,7 @@ import os
 # Load trained model
 model = YOLO('best.pt')
 
-st.title("Garbage Detection - Garbage Throwing & Garbage Bags")
+st.title("Garbage Detection")
 
 # Slider for detection confidence threshold
 conf_threshold = st.slider(
