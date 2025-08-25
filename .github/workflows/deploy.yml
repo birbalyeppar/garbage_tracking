@@ -29,7 +29,8 @@ jobs:
             # echo "📦 Installing dependencies..."
             # /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt
             echo "📦 Installing dependencies..."
-            /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu118
+            /home/admin123/garbage_tracking/garbage_venv/bin/pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+
 
             echo "🚀 Restarting service..."
             sudo systemctl restart garbage_tracking
