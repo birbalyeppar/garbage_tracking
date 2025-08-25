@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -14,11 +14,12 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: "192.168.1.100"      # <-- apne server ka LAN IP daalna
-          username: "admin123"       # <-- tumhara server ka user
+          host: "192.168.1.100"
+          username: "admin123"
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd ~/garbage_tracking
             git pull origin main
             pkill -f streamlit || true
             nohup streamlit run app.py --server.port 8501 --server.address 0.0.0.0 &
+
