@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import cv2
 import torch
 import uuid
@@ -13,6 +14,70 @@ from huggingface_hub import hf_hub_download
 
 st.set_page_config(page_title="Garbage Detection (Realtime + Download)", layout="wide")
 active_clips = {}
+
+global_id_counter = 0
+active_objects = {}
+id_map = {}   
+
+def iou(box1, box2):
+    """Intersection over Union to compare two bounding boxes"""
+    x1, y1, x2, y2 = box1
+    x1b, y1b, x2b, y2b = box2
+
+    inter_x1 = max(x1, x1b)
+    inter_y1 = max(y1, y1b)
+    inter_x2 = min(x2, x2b)
+    inter_y2 = min(y2, y2b)
+
+    inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
+    area1 = (x2 - x1) * (y2 - y1)
+    area2 = (x2b - x1b) * (y2b - y1b)
+    union = area1 + area2 - inter_area
+    return inter_area / union if union > 0 else 0
+
+
+def get_stable_id(cls_name, yolo_track_id, bbox, t_now, max_gap=2.0, iou_thresh=0.5):
+    """
+    Assigns a stable global ID to each detected object.
+    Even if YOLO gives new track_id, we keep the same global_id
+    as long as object is close in space and class.
+    """
+    global global_id_counter, active_objects, id_map
+
+    # Convert YOLO box to tuple
+    x1, y1, x2, y2 = bbox
+
+    # Check if YOLO track_id is already mapped
+    if yolo_track_id is not None and (cls_name, yolo_track_id) in id_map:
+        global_id = id_map[(cls_name, yolo_track_id)]
+        active_objects[global_id]["last_seen"] = t_now
+        active_objects[global_id]["bbox"] = (x1, y1, x2, y2)
+        return global_id
+
+    # Otherwise try to match with an existing global object
+    for gid, obj in active_objects.items():
+        if obj["class"] == cls_name and (t_now - obj["last_seen"]) < max_gap:
+            # If close enough in position (using IoU)
+            if iou((x1, y1, x2, y2), obj["bbox"]) > iou_thresh:
+                # Reuse this global_id
+                active_objects[gid]["last_seen"] = t_now
+                active_objects[gid]["bbox"] = (x1, y1, x2, y2)
+                if yolo_track_id is not None:
+                    id_map[(cls_name, yolo_track_id)] = gid
+                return gid
+
+    # Otherwise create a new ID
+    global_id_counter += 1
+    global_id = global_id_counter
+    active_objects[global_id] = {
+        "class": cls_name,
+        "last_seen": t_now,
+        "bbox": (x1, y1, x2, y2)
+    }
+    if yolo_track_id is not None:
+        id_map[(cls_name, yolo_track_id)] = global_id
+    return global_id
+
 
 def ensure_csv_exists(csv_path: str):
     """Ensure the CSV file exists with proper headers."""
@@ -34,7 +99,6 @@ def save_clip(clip_id: str, frames: list, fps: int, clip_output_dir: str) -> str
     writer.release()
 
     return clip_path
-
 
 def log_clip_to_csv(csv_path: str, clip_id: str, key: str, start_time: float, end_time: float, clip_path: str, location: str):
     """Log a saved clip to CSV."""
@@ -65,6 +129,11 @@ def process_detection_clips(
             cls_id = int(box.cls[0].item())
             cls_name = class_names[cls_id]
             track_id = int(box.id[0].item()) if box.id is not None else None
+            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+
+            global_id = get_stable_id(cls_name, track_id, (x1, y1, x2, y2), t_now)
+
+            print(f"Detected: class={cls_name}, yolo_id={track_id}, global_id={global_id}, time={t_now}")
             print(f"Detected:---------------------------------- class={cls_name}, track_id={track_id}, time={t_now}")
 
             if cls_name in selected_classes and track_id is not None:
@@ -109,8 +178,6 @@ def process_detection_clips(
             )
 
             del active_clips[key]
-
-
 
 def get_device():
     if torch.cuda.is_available():
